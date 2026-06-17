@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pruebas — Reglas de negocio · Matrícula UPN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e3a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 10v6M2 10l10-5 10 5-10 5z'/%3E%3Cpath d='M6 12v5c3 3 9 3 12 0v-5'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    body { padding: 32px; max-width: 920px; margin: 0 auto; }
+    .tests-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .summary { font-weight: 700; }
+    .summary .ok { color: var(--success-strong); }
+    .summary .ko { color: var(--danger); }
+    table.tt { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    table.tt th, table.tt td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: .9rem; }
+    table.tt th { color: var(--text-3); font-size: .8rem; }
+    table.tt tr:last-child td { border-bottom: 0; }
+    .st { font-weight: 700; }
+    .st.pass { color: var(--success-strong); }
+    .st.fail { color: var(--danger); }
+    .rn { font-weight: 700; color: var(--brand-strong); }
+    code { background: var(--surface-3); padding: 1px 6px; border-radius: 6px; font-size: .85em; }
+  </style>
+</head>
+<body>
+  <div class="tests-head">
+    <div>
+      <h1 style="font-size:1.6rem">Pruebas automatizadas — Reglas de negocio</h1>
+      <p class="muted">Se ejecutan contra <code>js/rules.js</code> (el mismo código que usa la app). <a href="index.html">← Volver a la app</a></p>
+    </div>
+    <div class="summary" id="summary" role="status" aria-live="polite">Ejecutando…</div>
+  </div>
+
+  <table class="tt" aria-label="Resultados de pruebas">
+    <thead><tr><th style="width:90px">Regla</th><th>Caso de prueba</th><th style="width:90px">Estado</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <!-- Sólo datos + estado + reglas: NO se carga app.js (no se necesita el DOM de la app) -->
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/rules.js"></script>
+  <script>
+    'use strict';
+    const results = [];
+    function reset() { STATE.selectedCourses = []; STATE.confirmed = false; }
+    function test(rn, name, fn) {
+      reset();
+      let pass = false, detail = '';
+      try { pass = !!fn(); } catch (e) { pass = false; detail = e.message; }
+      results.push({ rn, name: name + (detail ? ` — ${detail}` : ''), pass });
+    }
+    const eq = (a, b) => a === b;
+
+    /* RN-1 — Tope de 20 créditos */
+    test('RN-1', 'Seleccionar > 20 créditos marca exceso (creditExcess > 0)', () => {
+      STATE.selectedCourses = ['ALG-101', 'CAL-201', 'EST-201', 'PRO-101', 'BD-201', 'QUI-101']; // 24
+      return totalCredits() === 24 && creditExcess() === 4 && getValidationErrors().over === 4;
+    });
+    test('RN-1', 'Dentro del límite no hay exceso (creditExcess === 0)', () => {
+      STATE.selectedCourses = ['ALG-101', 'EST-101']; // 7
+      return creditExcess() === 0;
+    });
+
+    /* RN-2 — Prerrequisitos */
+    test('RN-2', 'EST-201 sin EST-101 aprobado → prerrequisito pendiente', () => {
+      STATE.selectedCourses = ['EST-201'];
+      const pr = getPrereqIssues();
+      return pr.length === 1 && pr[0].course.code === 'EST-201' && pr[0].missing.includes('EST-101');
+    });
+    test('RN-2', 'ELE-201 con PRO-101 aprobado → sin pendientes', () => {
+      STATE.selectedCourses = ['ELE-201'];
+      return getPrereqIssues().length === 0;
+    });
+
+    /* RN-3 — Cruce de horarios */
+    test('RN-3', 'ALG-101 y CAL-201 (Lun/Mié 8-10) → 1 conflicto', () => {
+      STATE.selectedCourses = ['ALG-101', 'CAL-201'];
+      return getConflicts().length === 1 && conflictCodes().has('ALG-101') && conflictCodes().has('CAL-201');
+    });
+    test('RN-3', 'Bloques adyacentes (8-10 vs 10-12) NO se solapan', () => {
+      return blocksOverlap({day:'Lun',start:8,end:10}, {day:'Lun',start:10,end:12}) === false;
+    });
+    test('RN-3', 'Bloques que se montan (8-10 vs 9-11) SÍ se solapan', () => {
+      return blocksOverlap({day:'Lun',start:8,end:10}, {day:'Lun',start:9,end:11}) === true;
+    });
+    test('RN-3', 'Mismo horario en días distintos NO es conflicto', () => {
+      return blocksOverlap({day:'Lun',start:8,end:10}, {day:'Mar',start:8,end:10}) === false;
+    });
+
+    /* RN-4 — Cupos en 0 */
+    test('RN-4', 'FIS-101 (40/40) no tiene cupos (seatsLeft <= 0)', () => {
+      return seatsLeft(getCourse('FIS-101')) <= 0;
+    });
+    test('RN-4', 'ALG-101 (28/40) tiene cupos disponibles', () => {
+      return seatsLeft(getCourse('ALG-101')) > 0;
+    });
+
+    /* RN-5 — Bloqueo tras confirmar (canConfirm refleja el estado) */
+    test('RN-5', 'Tras confirmar, canConfirm() es false', () => {
+      STATE.selectedCourses = ['ALG-101', 'EST-101']; STATE.confirmed = true;
+      return canConfirm() === false;
+    });
+
+    /* RN-6 — Turno por orden de mérito */
+    test('RN-6', 'computeTurno() devuelve puesto válido y hora con formato', () => {
+      const t = computeTurno();
+      return t.rank >= 1 && t.rank <= t.cohort && /^\d{2}:\d{2} (a\.m\.|p\.m\.)$/.test(t.timeLabel);
+    });
+    test('RN-6', 'Mejor promedio → mejor (menor) puesto', () => {
+      const prev = STATE.ponderado;
+      STATE.ponderado = 18; const a = computeTurno().rank;
+      STATE.ponderado = 12; const b = computeTurno().rank;
+      STATE.ponderado = prev;
+      return a < b;
+    });
+
+    /* Confirmación válida */
+    test('Flujo', 'Selección válida (sin errores) → canConfirm() true', () => {
+      STATE.selectedCourses = ['ALG-101', 'EST-101', 'HUM-101'];
+      return getValidationErrors().hasErrors === false && canConfirm() === true;
+    });
+
+    /* Métricas del historial (calculadas) */
+    test('Datos', 'historyStats: semestres = HISTORY.length', () => historyStats().semesters === HISTORY.length);
+    test('Datos', 'historyStats: cursos aprobados = suma de finalizados', () => {
+      const sum = HISTORY.filter(h => h.status === 'Finalizado').reduce((s, h) => s + h.courses, 0);
+      return historyStats().coursesApproved === sum;
+    });
+    test('Datos', 'historyStats: mejor promedio = máximo de finalizados', () => {
+      const max = Math.max(...HISTORY.filter(h => h.status === 'Finalizado').map(h => h.average));
+      return historyStats().best.average === max;
+    });
+
+    /* Render de resultados */
+    const tbody = document.getElementById('rows');
+    tbody.innerHTML = results.map(r =>
+      `<tr><td class="rn">${r.rn}</td><td>${r.name}</td><td class="st ${r.pass ? 'pass' : 'fail'}">${r.pass ? '✓ PASA' : '✗ FALLA'}</td></tr>`
+    ).join('');
+    const passed = results.filter(r => r.pass).length;
+    const total = results.length;
+    const allOk = passed === total;
+    document.getElementById('summary').innerHTML =
+      `<span class="${allOk ? 'ok' : 'ko'}">${passed} / ${total} pruebas ${allOk ? 'PASAN ✓' : 'con fallos ✗'}</span>`;
+    document.title = `${passed}/${total} ${allOk ? 'OK' : 'FALLAS'} — Pruebas Matrícula UPN`;
+  </script>
+</body>
+</html>

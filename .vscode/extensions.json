@@ -1,0 +1,7 @@
+{
+  // Extensiones recomendadas para este proyecto.
+  // VS Code las sugerirá automáticamente al abrir la carpeta.
+  "recommendations": [
+    "ritwickdey.LiveServer"
+  ]
+}

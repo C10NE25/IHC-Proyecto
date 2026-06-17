@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plataforma de Matrícula Universitaria UPN — Proyecto académico de Interacción Humano-Computador." />
+  <title>Plataforma de Matrícula UPN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e3a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 10v6M2 10l10-5 10 5-10 5z'/%3E%3Cpath d='M6 12v5c3 3 9 3 12 0v-5'/%3E%3C/svg%3E" />
+
+  <!-- Tipografía Inter (CDN) con respaldo al sistema si no hay conexión -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Salto de contenido para usuarios de teclado / lectores de pantalla -->
+  <a href="#view" class="skip-link">Saltar al contenido principal</a>
+
+  <div class="app-shell">
+    <!-- ====================== BARRA LATERAL ====================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
+      <div class="brand">
+        <span class="brand__logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" />
+          </svg>
+        </span>
+        <span class="brand__name">Universidad<br />Privada del Norte</span>
+      </div>
+
+      <nav class="nav" aria-label="Secciones">
+        <ul role="list">
+          <li><button class="nav__item" data-action="nav" data-view="inicio" aria-current="page">
+            <span class="nav__icon" data-icon="home" aria-hidden="true"></span><span>Inicio</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="matricula">
+            <span class="nav__icon" data-icon="doc" aria-hidden="true"></span><span>Mi matrícula</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="catalogo">
+            <span class="nav__icon" data-icon="catalog" aria-hidden="true"></span><span>Catálogo de cursos</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="horario">
+            <span class="nav__icon" data-icon="calendar" aria-hidden="true"></span><span>Mi horario</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="validaciones">
+            <span class="nav__icon" data-icon="shield" aria-hidden="true"></span><span>Validaciones</span>
+            <span class="nav__badge" id="nav-valid-badge" hidden></span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="analisis">
+            <span class="nav__icon" data-icon="chart" aria-hidden="true"></span><span>Dashboard analítico</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="datos">
+            <span class="nav__icon" data-icon="user" aria-hidden="true"></span><span>Mis datos</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="historial">
+            <span class="nav__icon" data-icon="history" aria-hidden="true"></span><span>Historial de matrículas</span></button></li>
+          <li><button class="nav__item" data-action="nav" data-view="ayuda">
+            <span class="nav__icon" data-icon="help" aria-hidden="true"></span><span>Ayuda</span></button></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar__footer">
+        <button class="nav__item nav__item--muted" data-action="logout">
+          <span class="nav__icon" data-icon="logout" aria-hidden="true"></span><span>Cerrar sesión</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Capa oscura para cerrar el drawer en móvil -->
+    <div class="overlay" id="overlay" data-action="close-sidebar" hidden></div>
+
+    <!-- ====================== ÁREA PRINCIPAL ====================== -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn topbar__menu" data-action="toggle-sidebar" aria-label="Abrir menú de navegación">
+          <span data-icon="menu" aria-hidden="true"></span>
+        </button>
+
+        <div class="topbar__titles">
+          <h1 class="topbar__title" id="topbar-title">Inicio</h1>
+          <p class="topbar__subtitle" id="topbar-subtitle"></p>
+        </div>
+
+        <div class="topbar__actions">
+          <button class="icon-btn" data-action="toggle-theme" id="theme-toggle"
+                  aria-label="Cambiar a modo oscuro" aria-pressed="false">
+            <span data-icon="moon" aria-hidden="true"></span>
+          </button>
+
+          <div class="popover-wrap">
+            <button class="icon-btn icon-btn--bell" id="btn-notifs" data-action="notifications"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="pop-notifs" aria-label="Notificaciones: 3 sin leer">
+              <span data-icon="bell" aria-hidden="true"></span>
+              <span class="bell-badge" id="bell-badge">3</span>
+            </button>
+            <div class="popover" id="pop-notifs" role="dialog" aria-label="Notificaciones" hidden>
+              <div class="popover__head">Notificaciones</div>
+              <div class="popover__body" id="notifs-list"></div>
+            </div>
+          </div>
+
+          <div class="popover-wrap">
+            <button class="user-chip" id="btn-user" data-action="user-menu"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="pop-user" aria-label="Menú de usuario: María Pérez">
+              <img class="user-chip__avatar" id="user-avatar" alt="" src="https://i.pravatar.cc/120?img=47" />
+              <span class="user-chip__name" id="user-name">María Pérez</span>
+              <span data-icon="chevron" aria-hidden="true"></span>
+            </button>
+            <div class="popover popover--menu" id="pop-user" role="menu" aria-label="Menú de usuario" hidden>
+              <div class="popover__user">
+                <img src="https://i.pravatar.cc/120?img=47" alt="" />
+                <div><strong>María Pérez</strong><br /><span class="muted">N00123456</span></div>
+              </div>
+              <button class="popover__item" role="menuitem" data-action="nav" data-view="datos"><span data-icon="user" aria-hidden="true"></span>Mis datos</button>
+              <button class="popover__item" role="menuitem" data-action="toggle-theme"><span data-icon="moon" aria-hidden="true"></span>Cambiar tema</button>
+              <button class="popover__item" role="menuitem" data-action="reset-demo"><span data-icon="history" aria-hidden="true"></span>Reiniciar demo</button>
+              <button class="popover__item popover__item--danger" role="menuitem" data-action="logout"><span data-icon="logout" aria-hidden="true"></span>Cerrar sesión</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="view" id="view" tabindex="-1">
+        <!-- Las vistas se inyectan aquí desde app.js -->
+      </main>
+    </div>
+  </div>
+
+  <!-- Región de notificaciones tipo toast (accesible) -->
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Raíz para modales -->
+  <div id="modal-root"></div>
+
+  <!-- Comprobante imprimible (sólo visible al imprimir / Guardar como PDF) -->
+  <div id="comprobante-root"></div>
+
+  <!-- Chart.js por CDN (gráficos del Dashboard analítico) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Lógica de la aplicación (orden importa: datos → estado → reglas → app) -->
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
